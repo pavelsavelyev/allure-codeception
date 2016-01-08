@@ -50,13 +50,26 @@ class AllureAdapter extends Extension
         Events::TEST_SKIPPED => 'testSkipped',
         Events::TEST_END => 'testEnd',
         Events::STEP_BEFORE => 'stepBefore',
-        Events::STEP_FAIL => 'stepFail',
+        // Events::STEP_FAIL => 'stepFail',
         Events::STEP_AFTER => 'stepAfter'
+    ];
+
+    /**
+     * @var array
+     */
+    private $ignoredAnnotations = [
+        'after', 'afterClass', 'backupGlobals', 'backupStaticAttributes', 'before', 'beforeClass',
+        'codeCoverageIgnore', 'codeCoverageIgnoreStart', 'codeCoverageIgnoreEnd', 'covers',
+        'coversDefaultClass', 'coversNothing', 'dataProvider', 'depends', 'expectedException',
+        'expectedExceptionCode', 'expectedExceptionMessage', 'group', 'large', 'medium',
+        'preserveGlobalState', 'requires', 'runTestsInSeparateProcesses', 'runInSeparateProcess',
+        'small', 'test', 'testdox', 'ticket', 'uses',
     ];
 
     public function _initialize()
     {
         parent::_initialize();
+        Annotation\AnnotationProvider::addIgnoredAnnotations($this->ignoredAnnotations);
         Annotation\AnnotationProvider::registerAnnotationNamespaces();
         $outputDirectory = $this->getOutputDirectory();
         $deletePreviousResults =
@@ -80,7 +93,7 @@ class AllureAdapter extends Extension
     {
         if (array_key_exists($optionKey, $this->config)) {
             return $this->config[$optionKey];
-        } 
+        }
         return $defaultValue;
     }
 
@@ -150,7 +163,7 @@ class AllureAdapter extends Extension
             $filesystem->remove($files);
         }
     }
-    
+
     public function suiteBefore(SuiteEvent $suiteEvent)
     {
         $suite = $suiteEvent->getSuite();
@@ -173,12 +186,15 @@ class AllureAdapter extends Extension
     {
         $test = $testEvent->getTest();
         $testName = $test->getName();
-        $className = get_class($test);
+        $className = $test->getTestClass();
         $event = new TestCaseStartedEvent($this->uuid, $testName);
+
         if (method_exists($className, $testName)){
-            $annotationManager = new Annotation\AnnotationManager(Annotation\AnnotationProvider::getMethodAnnotations($className, $testName));
+            $annotationManager = new Annotation\AnnotationManager(
+                Annotation\AnnotationProvider::getMethodAnnotations($className, $testName));
             $annotationManager->updateTestCaseEvent($event);
         }
+
         $this->getLifecycle()->fire($event);
     }
 
