@@ -169,9 +169,10 @@ class AllureAdapter extends Extension
         $suite = $suiteEvent->getSuite();
         $suiteName = $suite->getName();
         $event = new TestSuiteStartedEvent($suiteName);
-        if (class_exists($suiteName)){
-            $annotationManager = new Annotation\AnnotationManager(Annotation\AnnotationProvider::getClassAnnotations(get_class($suite)));
-            $annotationManager->updateTestSuiteEvent($event);
+        if (class_exists($suiteName, false)) {
+            $annotationManager = new Annotation\AnnotationManager(
+                Annotation\AnnotationProvider::getClassAnnotations($suiteName)
+            );$annotationManager->updateTestSuiteEvent($event);
         }
         $this->uuid = $event->getUuid();
         $this->getLifecycle()->fire($event);
@@ -185,9 +186,10 @@ class AllureAdapter extends Extension
     public function testStart(TestEvent $testEvent)
     {
         $test = $testEvent->getTest();
-        $testName = $test->getName();
-        $className = $test->getTestClass();
-        $event = new TestCaseStartedEvent($this->uuid, $testName);
+        $testName = $test->getName(false);
+        $name = $test->getName();
+        $className = get_class($test);
+        $event = new TestCaseStartedEvent($this->uuid, $name);
 
         if (method_exists($className, $testName)){
             $annotationManager = new Annotation\AnnotationManager(
